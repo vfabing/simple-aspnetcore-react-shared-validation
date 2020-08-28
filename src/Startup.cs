@@ -1,3 +1,4 @@
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -5,6 +6,8 @@ using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using simple_aspnetcore_react_shared_validation.Extensions;
+using System;
 
 namespace simple_aspnetcore_react_shared_validation
 {
@@ -20,14 +23,18 @@ namespace simple_aspnetcore_react_shared_validation
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-
-            services.AddControllersWithViews();
+            services.AddControllers().AddFluentValidation(options =>
+            {
+                options.RegisterValidatorsFromAssemblies(new[] { typeof(MyAssemblyContainingValidators).Assembly });
+            });
 
             // In production, the React files will be served from this directory
             services.AddSpaStaticFiles(configuration =>
             {
                 configuration.RootPath = "ClientApp/build";
             });
+
+            services.AddValidationDescriptorService(typeof(MyAssemblyContainingValidators).Assembly);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -52,20 +59,21 @@ namespace simple_aspnetcore_react_shared_validation
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllerRoute(
-                    name: "default",
-                    pattern: "{controller}/{action=Index}/{id?}");
+                endpoints.MapControllers();
             });
 
-            app.UseSpa(spa =>
-            {
-                spa.Options.SourcePath = "ClientApp";
+            app.UseWhen(
+                context => !context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase),
+                builder =>
+                    builder.UseSpa(spa =>
+                    {
+                        spa.Options.SourcePath = "ClientApp";
 
-                if (env.IsDevelopment())
-                {
-                    spa.UseReactDevelopmentServer(npmScript: "start");
-                }
-            });
+                        if (env.IsDevelopment())
+                        {
+                            spa.UseReactDevelopmentServer(npmScript: "start");
+                        }
+                    }));
         }
     }
 }
