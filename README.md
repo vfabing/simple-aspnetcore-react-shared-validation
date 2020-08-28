@@ -1,1 +1,1 @@
-"# simple-aspnetcore-react-shared-validation" 
+# simple-aspnetcore-react-shared-validation
